@@ -3,18 +3,33 @@ use warnings;
 use SWISS::Entry;
 use Data::Dumper;
 use TokyoCabinet;
+use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
+
+my $tcname = 'uniprot.tch';
+
+# create the object
+my $hdb = TokyoCabinet::HDB->new();
+
+# open the database
+if (!$hdb->open($tcname, $hdb->OWRITER | $hdb->OCREAT)) {
+	my $ecode = $hdb->ecode();
+	printf STDERR ("open error: %s\n", $hdb->errmsg($ecode));
+}
 
 $/ = "\/\/\n";
 
-while (<>){
+$ARGV[0] or die;
+open my $UP, '<', $ARGV[0] or die $!;
+while (<$UP>) {
 	my $entry = SWISS::Entry->fromText($_);	
-	for my $db (@{$entry->DRs->{list}}){
-		my $db_name = shift $db;
-		next unless $db_name eq "GO";
-		my ($go_id, $go_annotation, $go_evidence) = @$db;
-		$go_annotation =~ /^(\S)\:.+$/ or die;
-		my $go_type = $1;
-		say join "\t", ("SwissProt",$entry->AC,$entry->ID,"",$go_id, "","IMP","",$go_type,"","","","","","");
+	if (! $hdb->put($entry->ID, freeze $entry)){
+		my $ecode = $hdb->ecode();
+		printf STDERR ("put error: %s\n", $hdb->errmsg($ecode) );
 	}
+}
+
+if (!$hdb->close()) {
+	my $ecode = $hdb->ecode();
+	printf STDERR ("close error: %s\n", $hdb->errmsg($ecode));
 }
 
