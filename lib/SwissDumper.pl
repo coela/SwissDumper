@@ -8,8 +8,8 @@ use Storable qw(nstore store_fd nstore_fd freeze thaw dclone);
 my $tcname = 'uniprot.tch';
 my $acname = 'uniprot_ac.tch';
 
-#store_ac_id($ARGV[0], $acname);
-#store_swissknife();
+store_ac_id($ARGV[0], $acname);
+store_swissknife($ARGV[0], $tcname);
 
 sub store_ac_id {
 	my $fh = shift // die;
